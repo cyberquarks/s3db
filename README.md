@@ -1,7 +1,7 @@
 s3db
 ====
 
-HTTP KV database with indexing, with S3 as the backing store.
+HTTP KV database with indexing (eventually), with S3 as the backing store.
 
 You will need to provide an AwsCredentials.properties, and an s3db.properties, both on the classpath for this to work.
 
