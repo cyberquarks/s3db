@@ -17,6 +17,11 @@ s3db.properties needs to look like:
 bucket_name=<s3 bucket name>
 ```
 
+To enable server side encryption, add the following property:
+```
+enable_encryption=true
+```
+
 API:
 
 ### POST /:collectionName
