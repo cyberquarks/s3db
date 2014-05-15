@@ -12,12 +12,10 @@ import java.util.UUID;
 
 class PostWithoutKey implements Route {
     private final S3Store s3Store;
-    private final boolean enableEncryption;
 
     @Inject
-    PostWithoutKey(S3Store s3Store, boolean enableEncryption) {
+    PostWithoutKey(S3Store s3Store) {
         this.s3Store = s3Store;
-        this.enableEncryption = enableEncryption;
     }
 
     @Override
@@ -27,7 +25,7 @@ class PostWithoutKey implements Route {
         String body = request.body();
         byte[] bytes = body.getBytes(Charsets.UTF_8);
 
-        s3Store.putObject(collection, id, bytes, request.contentType(), enableEncryption);
+        s3Store.putObject(collection, id, bytes, request.contentType());
 
         response.type("application/json");
         return new Gson().toJson(CreationResponse.build(request, collection, id));

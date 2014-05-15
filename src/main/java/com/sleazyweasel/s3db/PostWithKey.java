@@ -10,12 +10,10 @@ import spark.Route;
 
 class PostWithKey implements Route {
     private final S3Store s3Store;
-    private final boolean enableEncryption;
 
     @Inject
-    PostWithKey(S3Store s3Store, boolean enableEncryption) {
+    PostWithKey(S3Store s3Store) {
         this.s3Store = s3Store;
-        this.enableEncryption = enableEncryption;
     }
 
     @Override
@@ -25,7 +23,7 @@ class PostWithKey implements Route {
         String body = request.body();
         byte[] bytes = body.getBytes(Charsets.UTF_8);
 
-        s3Store.putObject(collection, id, bytes, request.contentType(), enableEncryption);
+        s3Store.putObject(collection, id, bytes, request.contentType());
 
         response.type("application/json");
         return new Gson().toJson(CreationResponse.build(request, collection, id));

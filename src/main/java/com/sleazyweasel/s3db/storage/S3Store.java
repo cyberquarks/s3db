@@ -11,21 +11,23 @@ import java.io.ByteArrayInputStream;
 public class S3Store {
     private final AmazonS3 amazonS3;
     private final String bucketName;
+    private final boolean enableEncryption;
 
-    public S3Store(AmazonS3 amazonS3, String bucketName) {
+    public S3Store(AmazonS3 amazonS3, String bucketName, boolean enableEncryption) {
         this.amazonS3 = amazonS3;
         this.bucketName = bucketName;
+        this.enableEncryption = enableEncryption;
     }
 
     public S3Object getObject(String collection, String id) {
         return amazonS3.getObject(new GetObjectRequest(bucketName, collection + "/" + id));
     }
 
-    public void putObject(String collection, String id, byte[] bytes, String contentType, boolean enableServerSideEncryption) {
+    public void putObject(String collection, String id, byte[] bytes, String contentType) {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(bytes.length);
         metadata.setContentType(contentType);
-        if (enableServerSideEncryption) {
+        if (enableEncryption) {
             metadata.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         }
         amazonS3.putObject(new PutObjectRequest(bucketName, collection + "/" + id, new ByteArrayInputStream(bytes), metadata));
