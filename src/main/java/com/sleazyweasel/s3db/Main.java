@@ -16,11 +16,12 @@ public class Main {
         Properties properties = new Properties();
         properties.load(Resources.asByteSource(Resources.getResource("s3db.properties")).openStream());
         String bucketName = properties.getProperty("bucket_name");
+        boolean enableEncryption = Boolean.getBoolean(properties.getProperty("enable_encryption"));
         S3Store s3Store = new S3Store(amazonS3, bucketName);
 
         Spark.get("/:collection/:id", new GetByKey(s3Store));
-        Spark.post("/:collection/:id", new PostWithKey(s3Store));
-        Spark.post("/:collection", new PostWithoutKey(s3Store));
+        Spark.post("/:collection/:id", new PostWithKey(s3Store, enableEncryption));
+        Spark.post("/:collection", new PostWithoutKey(s3Store, enableEncryption));
     }
 
 }

@@ -21,10 +21,13 @@ public class S3Store {
         return amazonS3.getObject(new GetObjectRequest(bucketName, collection + "/" + id));
     }
 
-    public void putObject(String collection, String id, byte[] bytes, String contentType) {
+    public void putObject(String collection, String id, byte[] bytes, String contentType, boolean enableServerSideEncryption) {
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(bytes.length);
         metadata.setContentType(contentType);
+        if (enableServerSideEncryption) {
+            metadata.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        }
         amazonS3.putObject(new PutObjectRequest(bucketName, collection + "/" + id, new ByteArrayInputStream(bytes), metadata));
     }
 }
