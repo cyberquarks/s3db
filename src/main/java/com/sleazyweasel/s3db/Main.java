@@ -4,6 +4,7 @@ import com.amazonaws.auth.ClasspathPropertiesFileCredentialsProvider;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.google.common.io.Resources;
+import com.sleazyweasel.s3db.storage.S3Store;
 import spark.Spark;
 
 import java.io.IOException;
@@ -15,10 +16,11 @@ public class Main {
         Properties properties = new Properties();
         properties.load(Resources.asByteSource(Resources.getResource("s3db.properties")).openStream());
         String bucketName = properties.getProperty("bucket_name");
+        S3Store s3Store = new S3Store(amazonS3, bucketName);
 
-        Spark.get("/:collection/:id", new GetByKey(amazonS3, bucketName));
-        Spark.post("/:collection/:id", new PostWithKey(amazonS3, bucketName));
-        Spark.post("/:collection", new PostWithoutKey(amazonS3, bucketName));
+        Spark.get("/:collection/:id", new GetByKey(s3Store));
+        Spark.post("/:collection/:id", new PostWithKey(s3Store));
+        Spark.post("/:collection", new PostWithoutKey(s3Store));
     }
 
 }

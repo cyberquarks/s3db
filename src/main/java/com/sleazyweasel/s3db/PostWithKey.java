@@ -1,25 +1,19 @@
 package com.sleazyweasel.s3db;
 
-import com.amazonaws.services.s3.AmazonS3;
-import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
+import com.sleazyweasel.s3db.storage.S3Store;
 import spark.Request;
 import spark.Response;
 import spark.Route;
 
-import java.io.ByteArrayInputStream;
-
 class PostWithKey implements Route {
-    private final AmazonS3 amazonS3;
-    private final String bucketName;
+    private final S3Store s3Store;
 
     @Inject
-    PostWithKey(AmazonS3 amazonS3, String bucketName) {
-        this.amazonS3 = amazonS3;
-        this.bucketName = bucketName;
+    PostWithKey(S3Store s3Store) {
+        this.s3Store = s3Store;
     }
 
     @Override
@@ -28,13 +22,11 @@ class PostWithKey implements Route {
         String id = request.params(":id");
         String body = request.body();
         byte[] bytes = body.getBytes(Charsets.UTF_8);
-        ObjectMetadata metadata = new ObjectMetadata();
-        metadata.setContentLength(bytes.length);
-        metadata.setContentType(request.contentType());
 
-        amazonS3.putObject(new PutObjectRequest(bucketName, collection + "/" + id, new ByteArrayInputStream(bytes), metadata));
+        s3Store.putObject(collection, id, bytes, request.contentType());
 
         response.type("application/json");
         return new Gson().toJson(CreationResponse.build(request, collection, id));
     }
+
 }
