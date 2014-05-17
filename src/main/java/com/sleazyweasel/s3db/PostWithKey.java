@@ -1,6 +1,5 @@
 package com.sleazyweasel.s3db;
 
-import com.google.common.base.Charsets;
 import com.google.gson.Gson;
 import com.google.inject.Inject;
 import com.sleazyweasel.s3db.storage.S3Store;
@@ -21,9 +20,8 @@ class PostWithKey implements Route {
         String collection = request.params(":collection");
         String id = request.params(":id");
         String body = request.body();
-        byte[] bytes = body.getBytes(Charsets.UTF_8);
 
-        s3Store.putObject(collection, id, bytes, request.contentType());
+        s3Store.putObject(collection, id, request.contentType(), body);
 
         response.type("application/json");
         return new Gson().toJson(CreationResponse.build(request, collection, id));

@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Properties;
 
 public class Main {
+
     public static void main(String[] args) throws IOException {
         AmazonS3 amazonS3 = new AmazonS3Client(new ClasspathPropertiesFileCredentialsProvider());
         Properties properties = new Properties();
@@ -20,8 +21,8 @@ public class Main {
         S3Store s3Store = new S3Store(amazonS3, bucketName, enableEncryption);
 
         Spark.get("/:collection/:id", new GetByKey(s3Store));
-        Spark.post("/:collection/:id", new PostWithKey(s3Store));
-        Spark.post("/:collection", new PostWithoutKey(s3Store));
+        Spark.post("/:collection/:id", "application/json", new PostWithKey(s3Store));
+        Spark.post("/:collection", "application/json", new PostWithoutKey(s3Store));
     }
 
 }

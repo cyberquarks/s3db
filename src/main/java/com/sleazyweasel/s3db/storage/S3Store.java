@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.model.GetObjectRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.amazonaws.services.s3.model.S3Object;
+import com.google.common.base.Charsets;
 
 import java.io.ByteArrayInputStream;
 
@@ -23,7 +24,8 @@ public class S3Store {
         return amazonS3.getObject(new GetObjectRequest(bucketName, collection + "/" + id));
     }
 
-    public void putObject(String collection, String id, byte[] bytes, String contentType) {
+    public void putObject(String collection, String id, String contentType, String content) {
+        byte[] bytes = content.getBytes(Charsets.UTF_8);
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setContentLength(bytes.length);
         metadata.setContentType(contentType);
@@ -31,5 +33,10 @@ public class S3Store {
             metadata.setServerSideEncryption(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         }
         amazonS3.putObject(new PutObjectRequest(bucketName, collection + "/" + id, new ByteArrayInputStream(bytes), metadata));
+        //todo: consider fetching & validating the content is the same, to make sure the eventual consistency has resolved
+    }
+
+    public void ensureIndex(String collection, String field) {
+
     }
 }
