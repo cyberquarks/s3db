@@ -1,7 +1,7 @@
 s3db
 ====
 
-HTTP KV database with indexing (eventually), with S3 as the backing store.
+HTTP KV database with indexing, with S3 as the backing store.
 
 You will need to provide an AwsCredentials.properties, and an s3db.properties, both on the classpath for this to work.
 
@@ -15,10 +15,6 @@ s3db.properties needs to look like:
 
 ```
 bucket_name=<s3 bucket name>
-```
-
-To enable server side encryption, add the following property:
-```
 enable_encryption=true
 ```
 
@@ -26,7 +22,7 @@ API:
 
 ### POST /:collectionName
 
-create a new item, the db assigns the id;
+create a new item, the db assigns the id; body must be a json object.
 
 response:
 ```
@@ -37,7 +33,7 @@ response:
 
 ### POST /:collectionName/:id
 
-create/update an item, with the given :id
+create/update an item, with the given :id; body must be a json object.
 
 response:
 ```
@@ -54,3 +50,10 @@ response:
 whatever you put in initially
 
 
+### PUT /:collectionName/indexes/:fieldName
+
+Ensure an index exists for the field name in the collection. Note: currently only supports top level fields in json objects.
+The index is created in the background, after the response is returned. At some point in the future, it will be complete.
+
+response:
+200 if all is well (todo: should probably be 201 if the index needed to be created).

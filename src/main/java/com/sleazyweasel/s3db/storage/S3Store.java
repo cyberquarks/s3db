@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -28,6 +29,7 @@ public class S3Store {
     private final Gson gson;
     private final ForkJoinPool forkJoinPool = new ForkJoinPool(10);
     private final Executor executor = Executors.newFixedThreadPool(10);
+    private final JsonParser jsonParser = new JsonParser();
 
     public S3Store(AmazonS3 amazonS3, String bucketName, boolean enableEncryption, Gson gson) {
         this.amazonS3 = amazonS3;
@@ -47,6 +49,10 @@ public class S3Store {
             }
             throw e;
         }
+        return getAsString(object);
+    }
+
+    private String getAsString(S3Object object) {
         try {
             return CharStreams.toString(new InputStreamReader(object.getObjectContent()));
         } catch (IOException e) {
@@ -73,33 +79,60 @@ public class S3Store {
     }
 
     /*
-       ::db::/indexData/<collection>/<field>/<fieldValue>/<objectIdWithValue>    [no payload stored here]
+       index entry structure:
+       ::db::/indexData/<collection>/<field>/<fieldValue>/<objectId>    [no payload stored here]
      */
 
     private void updateIndexes(String collection, String id, String content, String previousContent) {
         executor.execute(() -> {
             Indexes indexes = getIndexes(collection);
-            JsonElement element = new JsonParser().parse(content);
-            JsonElement previousElement = previousContent == null ? JsonNull.INSTANCE : new JsonParser().parse(previousContent);
+            JsonElement element = jsonParser.parse(content);
+            JsonElement previousElement = previousContent == null ? JsonNull.INSTANCE : jsonParser.parse(previousContent);
             forkJoinPool.execute(() -> indexes.getFields().stream().parallel().forEach(field -> {
-                JsonElement previousValue = previousElement.isJsonNull() ? previousElement : previousElement.getAsJsonObject().get(field);
-                previousValue = previousValue == null ? JsonNull.INSTANCE : previousValue;
-                JsonElement newValue = element.getAsJsonObject().get(field);
-                newValue = newValue == null ? JsonNull.INSTANCE : newValue;
+                JsonElement previousValue = nullSafeFieldValue(previousElement, field);
+                JsonElement newValue = nullSafeFieldValue(element, field);
                 if (!previousValue.equals(newValue)) {
                     if (!previousValue.isJsonNull()) {
                         amazonS3.deleteObject(bucketName, "::db::/indexData/" + collection + "/" + field + "/" + previousValue.getAsString() + "/" + id);
                     }
-                    if (!newValue.isJsonNull()) {
-                        rawPutObject("::db::/indexData", collection + "/" + field + "/" + newValue.getAsString() + "/" + id, "text/plain", "");
-                    }
+                    writeIndexEntry(collection, id, field, newValue);
                 }
             }));
         });
     }
 
+    private void writeIndexEntry(String collection, String id, String field, JsonElement fieldValue) {
+        if (!fieldValue.isJsonNull()) {
+            rawPutObject("::db::/indexData", collection + "/" + field + "/" + fieldValue.getAsString() + "/" + id, "text/plain", "");
+        }
+    }
+
+    private JsonElement nullSafeFieldValue(JsonElement previousElement, String field) {
+        JsonElement previousValue = previousElement.isJsonNull() ? previousElement : previousElement.getAsJsonObject().get(field);
+        previousValue = previousValue == null ? JsonNull.INSTANCE : previousValue;
+        return previousValue;
+    }
+
     private void updateAllIndexEntries(String collection, String field) {
-        //implement me!!!!
+        ObjectListing objectListing = amazonS3.listObjects(bucketName, collection + "/");
+        while(true) {
+            List<S3ObjectSummary> summaries = objectListing.getObjectSummaries();
+            forkJoinPool.execute(() -> summaries.parallelStream()
+                    .map(summary -> amazonS3.getObject(bucketName, summary.getKey()))
+                    .forEach(object -> {
+                        String key = object.getKey();
+                        String id = key.substring(key.lastIndexOf("/") + 1);
+                        JsonElement element = jsonParser.parse(getAsString(object));
+                        JsonElement fieldValue = nullSafeFieldValue(element, field);
+                        writeIndexEntry(collection, id, field, fieldValue);
+                    }));
+            if (objectListing.isTruncated()) {
+                objectListing = amazonS3.listNextBatchOfObjects(objectListing);
+            }
+            else {
+                break;
+            }
+        }
     }
 
     public void ensureIndex(String collection, String field) {
