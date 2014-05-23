@@ -57,3 +57,11 @@ The index is created in the background, after the response is returned. At some 
 
 response:
 200 if all is well (todo: should probably be 201 if the index needed to be created).
+
+
+### TODO
+- [ ] Indexing
+  - [ ] Provide a route to query results by field value.
+  - [ ] Test Performance
+- [ ] Deployability
+- [ ] Profit!
