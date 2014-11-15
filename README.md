@@ -68,6 +68,8 @@ response:
 - 
 
 
+---
+s3db is profiled and optimized with YourKit!
 
 YourKit supports open source projects with its full-featured Java Profiler.
 YourKit, LLC is the creator of <a href="http://www.yourkit.com/java/profiler/index.jsp">YourKit Java Profiler</a>
